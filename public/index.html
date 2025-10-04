@@ -1,0 +1,917 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HelpDesk Mini - Ticket System</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            opacity: 0.9;
+            font-size: 1.1rem;
+        }
+        
+        .content {
+            padding: 30px;
+        }
+        
+        .auth-section {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        input, select, textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e1e5e9;
+            border-radius: 6px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+        
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: transform 0.2s;
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+        }
+        
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .ticket-card {
+            background: white;
+            border: 1px solid #e1e5e9;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .ticket-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        
+        .ticket-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+        
+        .ticket-status {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        
+        .status-open { background: #e3f2fd; color: #1976d2; }
+        .status-in_progress { background: #fff3e0; color: #f57c00; }
+        .status-resolved { background: #e8f5e8; color: #388e3c; }
+        .status-closed { background: #f3e5f5; color: #7b1fa2; }
+        
+        .ticket-priority {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        
+        .priority-low { background: #e8f5e8; color: #388e3c; }
+        .priority-medium { background: #fff3e0; color: #f57c00; }
+        .priority-high { background: #ffebee; color: #d32f2f; }
+        .priority-urgent { background: #fce4ec; color: #c2185b; }
+        
+        .ticket-description {
+            color: #666;
+            margin-bottom: 10px;
+            line-height: 1.5;
+        }
+        
+        .ticket-meta {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.9rem;
+            color: #888;
+        }
+        
+        .hidden {
+            display: none;
+        }
+        
+        .error {
+            background: #ffebee;
+            color: #c62828;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        
+        .success {
+            background: #e8f5e8;
+            color: #2e7d32;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+        }
+        
+        #createTicketForm {
+            transition: all 0.3s ease;
+            border-left: 4px solid #667eea;
+        }
+        
+        #createTicketForm.hidden {
+            opacity: 0;
+            transform: translateY(-10px);
+        }
+        
+        #createTicketForm:not(.hidden) {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎫 HelpDesk Mini</h1>
+            <p>Robust Ticketing System with SLA Tracking & RBAC</p>
+        </div>
+        
+        <div class="content">
+            <!-- Authentication Section -->
+            <div id="authSection" class="auth-section">
+                <h2>Login to Access Tickets</h2>
+                <div class="form-group">
+                    <label for="email">Email:</label>
+                    <input type="email" id="email" placeholder="admin@helpdesk.com">
+                </div>
+                <div class="form-group">
+                    <label for="password">Password:</label>
+                    <input type="password" id="password" placeholder="Admin123!">
+                </div>
+                <button id="loginButton">Login</button>
+                <div id="authMessage"></div>
+            </div>
+            
+            <!-- Main Interface -->
+            <div id="mainInterface" class="hidden">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <div>
+                        <h2>Support Tickets</h2>
+                        <div id="userInfo" style="font-size: 0.9rem; color: #666; margin-top: 5px;">
+                            <!-- User role and info will be displayed here -->
+                        </div>
+                    </div>
+                    <div>
+                        <button id="newTicketButton" style="margin-right: 10px;">+ New Ticket</button>
+                        <button id="logoutButton">Logout</button>
+                    </div>
+                </div>
+                
+                <!-- Create Ticket Form (initially hidden) -->
+                <div id="createTicketForm" class="hidden" style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 20px; border: 2px solid #e1e5e9;">
+                    <h3 style="margin-bottom: 15px; color: #2c3e50;">Create New Ticket</h3>
+                    <div class="form-group">
+                        <label for="ticketTitle">Title:</label>
+                        <input type="text" id="ticketTitle" placeholder="Brief description of the issue">
+                    </div>
+                    <div class="form-group">
+                        <label for="ticketDescription">Description:</label>
+                        <textarea id="ticketDescription" rows="4" placeholder="Detailed description of the issue"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="ticketPriority">Priority:</label>
+                        <select id="ticketPriority">
+                            <option value="low">Low</option>
+                            <option value="medium" selected>Medium</option>
+                            <option value="high">High</option>
+                            <option value="urgent">Urgent</option>
+                        </select>
+                    </div>
+                    <div style="display: flex; gap: 10px; margin-top: 15px;">
+                        <button id="submitTicketButton">Create Ticket</button>
+                        <button id="cancelTicketButton" style="background: #6c757d;">Cancel</button>
+                    </div>
+                </div>
+                
+                <!-- Role-based controls -->
+                <div id="roleControls" style="margin-bottom: 20px;">
+                    <!-- Admin controls -->
+                    <div id="adminControls" class="hidden" style="background: #e3f2fd; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+                        <h4 style="margin-bottom: 10px; color: #1976d2;">🔧 Admin Controls</h4>
+                        <button id="viewAllTicketsBtn" style="margin-right: 10px;">View All Tickets</button>
+                        <button id="viewSlaBreachedBtn" style="margin-right: 10px;">SLA Breached Tickets</button>
+                        <button id="manageUsersBtn" style="margin-right: 10px;">Manage Users</button>
+                        <button id="systemStatsBtn">System Statistics</button>
+                    </div>
+                    
+                    <!-- Agent controls -->
+                    <div id="agentControls" class="hidden" style="background: #fff3e0; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+                        <h4 style="margin-bottom: 10px; color: #f57c00;">🎯 Agent Controls</h4>
+                        <button id="myAssignedTicketsBtn" style="margin-right: 10px;">My Assigned Tickets</button>
+                        <button id="unassignedTicketsBtn" style="margin-right: 10px;">Unassigned Tickets</button>
+                        <button id="slaBreachedBtn">SLA Breached Tickets</button>
+                    </div>
+                    
+                    <!-- User controls -->
+                    <div id="userControls" class="hidden" style="background: #e8f5e8; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+                        <h4 style="margin-bottom: 10px; color: #388e3c;">👤 My Tickets</h4>
+                        <button id="myTicketsBtn" style="margin-right: 10px;">My Tickets</button>
+                        <button id="createNewTicketBtn">Create New Ticket</button>
+                    </div>
+                </div>
+                
+                <div id="ticketsList"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:3000/api';
+        let authToken = localStorage.getItem('authToken');
+        let currentUser = null;
+
+        // Moved to DOMContentLoaded event listener
+
+        async function login() {
+            console.log('Login function called');
+            
+            const emailElement = document.getElementById('email');
+            const passwordElement = document.getElementById('password');
+            
+            if (!emailElement || !passwordElement) {
+                console.error('Email or password elements not found');
+                showMessage('authMessage', 'Form elements not found. Please refresh the page.', 'error');
+                return;
+            }
+            
+            const email = emailElement.value;
+            const password = passwordElement.value;
+            
+            if (!email || !password) {
+                showMessage('authMessage', 'Please enter both email and password', 'error');
+                return;
+            }
+            
+            console.log('Attempting login with:', email);
+            showMessage('authMessage', 'Logging in...', 'success');
+            
+            try {
+                const response = await fetch(`${API_BASE}/auth/login`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ email, password })
+                });
+                
+                console.log('Login response status:', response.status);
+                const data = await response.json();
+                console.log('Login response data:', data);
+                
+                if (response.ok) {
+                    authToken = data.token;
+                    currentUser = data.user;
+                    localStorage.setItem('authToken', authToken);
+                    localStorage.setItem('currentUser', JSON.stringify(currentUser));
+                    console.log('Login successful, showing main interface');
+                    showMainInterface();
+                    loadTickets();
+                } else {
+                    console.error('Login failed:', data.message);
+                    showMessage('authMessage', data.message || 'Login failed', 'error');
+                }
+            } catch (error) {
+                console.error('Login error:', error);
+                showMessage('authMessage', `Network error: ${error.message}`, 'error');
+            }
+        }
+
+        async function checkAuth() {
+            try {
+                const response = await fetch(`${API_BASE}/auth/profile`, {
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    currentUser = data.user;
+                    showMainInterface();
+                    loadTickets();
+                } else {
+                    logout();
+                }
+            } catch (error) {
+                logout();
+            }
+        }
+
+        function logout() {
+            authToken = null;
+            currentUser = null;
+            localStorage.removeItem('authToken');
+            localStorage.removeItem('currentUser');
+            document.getElementById('authSection').classList.remove('hidden');
+            document.getElementById('mainInterface').classList.add('hidden');
+        }
+
+        function showMainInterface() {
+            console.log('Showing main interface');
+            const authSection = document.getElementById('authSection');
+            const mainInterface = document.getElementById('mainInterface');
+            
+            if (authSection) {
+                authSection.classList.add('hidden');
+                console.log('Auth section hidden');
+            } else {
+                console.error('Auth section not found');
+            }
+            
+            if (mainInterface) {
+                mainInterface.classList.remove('hidden');
+                console.log('Main interface shown');
+                
+                // Show role-based controls
+                setupRoleBasedInterface();
+            } else {
+                console.error('Main interface not found');
+            }
+        }
+
+        function setupRoleBasedInterface() {
+            if (!currentUser) {
+                console.error('No current user found');
+                return;
+            }
+
+            // Update user info display
+            const userInfo = document.getElementById('userInfo');
+            userInfo.innerHTML = `Logged in as <strong>${currentUser.username}</strong> (${currentUser.role.toUpperCase()})`;
+
+            // Hide all role controls first
+            document.getElementById('adminControls').classList.add('hidden');
+            document.getElementById('agentControls').classList.add('hidden');
+            document.getElementById('userControls').classList.add('hidden');
+
+            // Show appropriate controls based on role
+            switch (currentUser.role) {
+                case 'admin':
+                    document.getElementById('adminControls').classList.remove('hidden');
+                    console.log('Admin controls shown');
+                    break;
+                case 'agent':
+                    document.getElementById('agentControls').classList.remove('hidden');
+                    console.log('Agent controls shown');
+                    break;
+                case 'user':
+                    document.getElementById('userControls').classList.remove('hidden');
+                    console.log('User controls shown');
+                    break;
+                default:
+                    console.warn('Unknown user role:', currentUser.role);
+            }
+
+            // Load appropriate tickets based on role
+            loadTicketsForRole();
+        }
+
+        function loadTicketsForRole() {
+            if (!currentUser) return;
+
+            switch (currentUser.role) {
+                case 'admin':
+                    loadAllTickets();
+                    break;
+                case 'agent':
+                    loadAgentTickets();
+                    break;
+                case 'user':
+                    loadUserTickets();
+                    break;
+            }
+        }
+
+        async function loadAllTickets() {
+            const ticketsList = document.getElementById('ticketsList');
+            ticketsList.innerHTML = '<div class="loading">Loading all tickets...</div>';
+            
+            try {
+                const response = await fetch(`${API_BASE}/tickets`, {
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    displayTickets(data.tickets, 'admin');
+                } else {
+                    ticketsList.innerHTML = '<div class="error">Failed to load tickets</div>';
+                }
+            } catch (error) {
+                ticketsList.innerHTML = '<div class="error">Network error loading tickets</div>';
+            }
+        }
+
+        async function loadAgentTickets() {
+            const ticketsList = document.getElementById('ticketsList');
+            ticketsList.innerHTML = '<div class="loading">Loading all tickets...</div>';
+            
+            try {
+                const response = await fetch(`${API_BASE}/tickets`, {
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    // Agents can see ALL tickets
+                    displayTickets(data.tickets, 'agent');
+                } else {
+                    ticketsList.innerHTML = '<div class="error">Failed to load tickets</div>';
+                }
+            } catch (error) {
+                ticketsList.innerHTML = '<div class="error">Network error loading tickets</div>';
+            }
+        }
+
+        async function loadUserTickets() {
+            const ticketsList = document.getElementById('ticketsList');
+            ticketsList.innerHTML = '<div class="loading">Loading your tickets...</div>';
+            
+            try {
+                const response = await fetch(`${API_BASE}/tickets`, {
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    // Filter tickets created by this user
+                    const userTickets = data.tickets.filter(ticket => 
+                        ticket.createdBy === currentUser.id
+                    );
+                    displayTickets(userTickets, 'user');
+                } else {
+                    ticketsList.innerHTML = '<div class="error">Failed to load tickets</div>';
+                }
+            } catch (error) {
+                ticketsList.innerHTML = '<div class="error">Network error loading tickets</div>';
+            }
+        }
+
+        async function loadSlaBreachedTickets() {
+            const ticketsList = document.getElementById('ticketsList');
+            ticketsList.innerHTML = '<div class="loading">Loading SLA breached tickets...</div>';
+            
+            try {
+                const response = await fetch(`${API_BASE}/tickets/sla-breached`, {
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    displayTickets(data.tickets, currentUser.role);
+                } else {
+                    ticketsList.innerHTML = '<div class="error">Failed to load SLA breached tickets</div>';
+                }
+            } catch (error) {
+                ticketsList.innerHTML = '<div class="error">Network error loading SLA breached tickets</div>';
+            }
+        }
+
+        // Legacy function for backward compatibility
+        async function loadTickets() {
+            loadTicketsForRole();
+        }
+
+        function displayTickets(tickets, userRole = 'user') {
+            const ticketsList = document.getElementById('ticketsList');
+            
+            if (tickets.length === 0) {
+                ticketsList.innerHTML = '<div class="loading">No tickets found</div>';
+                return;
+            }
+            
+            ticketsList.innerHTML = tickets.map(ticket => {
+                const canEdit = canUserEditTicket(ticket, userRole);
+                const canAssign = canUserAssignTicket(userRole);
+                const canDelete = canUserDeleteTicket(userRole);
+                
+                return `
+                    <div class="ticket-card">
+                        <div class="ticket-header">
+                            <div class="ticket-title">${ticket.title}</div>
+                            <div>
+                                <span class="ticket-status status-${ticket.status}">${ticket.status}</span>
+                                <span class="ticket-priority priority-${ticket.priority}">${ticket.priority}</span>
+                            </div>
+                        </div>
+                        <div class="ticket-description">${ticket.description}</div>
+                        <div class="ticket-meta">
+                            <span>Created: ${new Date(ticket.createdAt).toLocaleDateString()}</span>
+                            <span>SLA Due: ${new Date(ticket.slaDueDate).toLocaleString()}</span>
+                            ${ticket.assignedTo ? `<span>Assigned to: User ${ticket.assignedTo}</span>` : '<span style="color: #ff9800;">Unassigned</span>'}
+                            ${ticket.slaBreached ? '<span style="color: #d32f2f; font-weight: bold;">⚠️ SLA BREACHED</span>' : ''}
+                        </div>
+                        <div class="ticket-actions" style="margin-top: 10px; padding-top: 10px; border-top: 1px solid #eee;">
+                            ${canEdit ? `<button onclick="editTicket(${ticket.id})" style="margin-right: 5px; padding: 5px 10px; font-size: 0.8rem;">Edit</button>` : ''}
+                            ${canAssign ? `<button onclick="assignTicket(${ticket.id})" style="margin-right: 5px; padding: 5px 10px; font-size: 0.8rem;">Assign</button>` : ''}
+                            ${canResolve(ticket, userRole) ? `<button onclick="resolveTicket(${ticket.id})" style="margin-right: 5px; padding: 5px 10px; font-size: 0.8rem; background: #4caf50; color: white;">Resolve</button>` : ''}
+                            <button onclick="viewTicketDetails(${ticket.id})" style="margin-right: 5px; padding: 5px 10px; font-size: 0.8rem;">View Details</button>
+                            ${canDelete ? `<button onclick="deleteTicket(${ticket.id})" style="margin-right: 5px; padding: 5px 10px; font-size: 0.8rem; background: #d32f2f; color: white;">Delete</button>` : ''}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function canUserEditTicket(ticket, userRole) {
+            switch (userRole) {
+                case 'admin':
+                    return true;
+                case 'agent':
+                    return true;
+                case 'user':
+                    return ticket.createdBy === currentUser.id && ticket.status === 'open';
+                default:
+                    return false;
+            }
+        }
+
+        function canUserAssignTicket(userRole) {
+            return userRole === 'admin' || userRole === 'agent';
+        }
+
+        function canUserDeleteTicket(userRole) {
+            return userRole === 'admin';
+        }
+
+        function canResolve(ticket, userRole) {
+            // Only agents and admins can resolve tickets
+            // Agents can only resolve tickets assigned to them or unassigned tickets
+            if (userRole === 'admin') return true;
+            if (userRole === 'agent') {
+                return ticket.assignedTo === currentUser.id || ticket.assignedTo === null;
+            }
+            return false;
+        }
+
+        function showCreateTicketForm() {
+            document.getElementById('createTicketForm').classList.remove('hidden');
+            // Scroll to the form
+            document.getElementById('createTicketForm').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function hideCreateTicketForm() {
+            document.getElementById('createTicketForm').classList.add('hidden');
+            // Clear form fields
+            document.getElementById('ticketTitle').value = '';
+            document.getElementById('ticketDescription').value = '';
+            document.getElementById('ticketPriority').value = 'medium';
+        }
+
+        async function submitTicket() {
+            const title = document.getElementById('ticketTitle').value;
+            const description = document.getElementById('ticketDescription').value;
+            const priority = document.getElementById('ticketPriority').value;
+            
+            if (!title || !description) {
+                alert('Please fill in all fields');
+                return;
+            }
+            
+            console.log('Creating ticket:', { title, description, priority });
+            
+            try {
+                const response = await fetch(`${API_BASE}/tickets`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`,
+                        'Idempotency-Key': `ticket-${Date.now()}`
+                    },
+                    body: JSON.stringify({ title, description, priority })
+                });
+                
+                console.log('Response status:', response.status);
+                const data = await response.json();
+                console.log('Response data:', data);
+                
+                if (response.ok) {
+                    hideCreateTicketForm();
+                    loadTickets();
+                    alert('Ticket created successfully!');
+                } else {
+                    alert(`Failed to create ticket: ${data.message || 'Unknown error'}`);
+                }
+            } catch (error) {
+                console.error('Error creating ticket:', error);
+                alert(`Network error creating ticket: ${error.message}`);
+            }
+        }
+
+        function showMessage(elementId, message, type) {
+            const element = document.getElementById(elementId);
+            element.innerHTML = `<div class="${type}">${message}</div>`;
+        }
+
+        function setupRoleBasedEventListeners() {
+            // Admin controls
+            const viewAllTicketsBtn = document.getElementById('viewAllTicketsBtn');
+            if (viewAllTicketsBtn) {
+                viewAllTicketsBtn.addEventListener('click', loadAllTickets);
+            }
+
+            const viewSlaBreachedBtn = document.getElementById('viewSlaBreachedBtn');
+            if (viewSlaBreachedBtn) {
+                viewSlaBreachedBtn.addEventListener('click', loadSlaBreachedTickets);
+            }
+
+            const manageUsersBtn = document.getElementById('manageUsersBtn');
+            if (manageUsersBtn) {
+                manageUsersBtn.addEventListener('click', manageUsers);
+            }
+
+            const systemStatsBtn = document.getElementById('systemStatsBtn');
+            if (systemStatsBtn) {
+                systemStatsBtn.addEventListener('click', showSystemStats);
+            }
+
+            // Agent controls
+            const myAssignedTicketsBtn = document.getElementById('myAssignedTicketsBtn');
+            if (myAssignedTicketsBtn) {
+                myAssignedTicketsBtn.addEventListener('click', loadAgentTickets);
+            }
+
+            const unassignedTicketsBtn = document.getElementById('unassignedTicketsBtn');
+            if (unassignedTicketsBtn) {
+                unassignedTicketsBtn.addEventListener('click', loadUnassignedTickets);
+            }
+
+            const slaBreachedBtn = document.getElementById('slaBreachedBtn');
+            if (slaBreachedBtn) {
+                slaBreachedBtn.addEventListener('click', loadSlaBreachedTickets);
+            }
+
+            // User controls
+            const myTicketsBtn = document.getElementById('myTicketsBtn');
+            if (myTicketsBtn) {
+                myTicketsBtn.addEventListener('click', loadUserTickets);
+            }
+
+            const createNewTicketBtn = document.getElementById('createNewTicketBtn');
+            if (createNewTicketBtn) {
+                createNewTicketBtn.addEventListener('click', showCreateTicketForm);
+            }
+        }
+
+        // Action functions
+        function editTicket(ticketId) {
+            alert(`Edit ticket ${ticketId} - Feature coming soon!`);
+        }
+
+        async function assignTicket(ticketId) {
+            const assigneeId = prompt('Enter the user ID to assign this ticket to (or leave empty to unassign):');
+            
+            if (assigneeId === null) return; // User cancelled
+            
+            try {
+                const response = await fetch(`${API_BASE}/tickets/${ticketId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify({ 
+                        assignedTo: assigneeId || null,
+                        version: 1 // This should be the current version, but for simplicity using 1
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    alert(assigneeId ? `Ticket assigned successfully!` : `Ticket unassigned successfully!`);
+                    loadTicketsForRole(); // Reload tickets for current role
+                } else {
+                    alert(`Failed to assign ticket: ${data.message || 'Unknown error'}`);
+                }
+            } catch (error) {
+                console.error('Error assigning ticket:', error);
+                alert(`Network error assigning ticket: ${error.message}`);
+            }
+        }
+
+        function viewTicketDetails(ticketId) {
+            alert(`View details for ticket ${ticketId} - Feature coming soon!`);
+        }
+
+        function deleteTicket(ticketId) {
+            if (confirm(`Are you sure you want to delete ticket ${ticketId}?`)) {
+                alert(`Delete ticket ${ticketId} - Feature coming soon!`);
+            }
+        }
+
+        async function resolveTicket(ticketId) {
+            if (!confirm(`Are you sure you want to resolve ticket ${ticketId}?`)) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/tickets/${ticketId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify({ 
+                        status: 'resolved',
+                        version: 1 // This should be the current version, but for simplicity using 1
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    alert('Ticket resolved successfully!');
+                    loadTicketsForRole(); // Reload tickets for current role
+                } else {
+                    alert(`Failed to resolve ticket: ${data.message || 'Unknown error'}`);
+                }
+            } catch (error) {
+                console.error('Error resolving ticket:', error);
+                alert(`Network error resolving ticket: ${error.message}`);
+            }
+        }
+
+        function manageUsers() {
+            alert('User management - Feature coming soon!');
+        }
+
+        function showSystemStats() {
+            alert('System statistics - Feature coming soon!');
+        }
+
+        async function loadUnassignedTickets() {
+            const ticketsList = document.getElementById('ticketsList');
+            ticketsList.innerHTML = '<div class="loading">Loading unassigned tickets...</div>';
+            
+            try {
+                const response = await fetch(`${API_BASE}/tickets`, {
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    const unassignedTickets = data.tickets.filter(ticket => ticket.assignedTo === null);
+                    displayTickets(unassignedTickets, 'agent');
+                } else {
+                    ticketsList.innerHTML = '<div class="error">Failed to load unassigned tickets</div>';
+                }
+            } catch (error) {
+                ticketsList.innerHTML = '<div class="error">Network error loading unassigned tickets</div>';
+            }
+        }
+
+        // Event listeners
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('DOM loaded, setting up event listeners');
+            
+            // Login button
+            const loginButton = document.getElementById('loginButton');
+            if (loginButton) {
+                loginButton.addEventListener('click', login);
+                console.log('Login button event listener added');
+            } else {
+                console.error('Login button not found');
+            }
+            
+            // New ticket button
+            const newTicketButton = document.getElementById('newTicketButton');
+            if (newTicketButton) {
+                newTicketButton.addEventListener('click', showCreateTicketForm);
+                console.log('New ticket button event listener added');
+            }
+            
+            // Logout button
+            const logoutButton = document.getElementById('logoutButton');
+            if (logoutButton) {
+                logoutButton.addEventListener('click', logout);
+                console.log('Logout button event listener added');
+            }
+            
+            // Submit ticket button
+            const submitTicketButton = document.getElementById('submitTicketButton');
+            if (submitTicketButton) {
+                submitTicketButton.addEventListener('click', submitTicket);
+                console.log('Submit ticket button event listener added');
+            }
+            
+            // Cancel ticket button
+            const cancelTicketButton = document.getElementById('cancelTicketButton');
+            if (cancelTicketButton) {
+                cancelTicketButton.addEventListener('click', hideCreateTicketForm);
+                console.log('Cancel ticket button event listener added');
+            }
+            
+            // Role-based button event listeners
+            setupRoleBasedEventListeners();
+            
+            // Check if user is already logged in
+            if (authToken) {
+                console.log('User already logged in, checking auth');
+                checkAuth();
+            }
+        });
+    </script>
+</body>
+</html>

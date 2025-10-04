@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HelpDesk Mini - Debug</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        .success { background: #d4edda; border-color: #c3e6cb; }
+        .error { background: #f8d7da; border-color: #f5c6cb; }
+        button { padding: 10px 20px; margin: 5px; cursor: pointer; }
+        pre { background: #f8f9fa; padding: 10px; border-radius: 3px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <h1>🔧 HelpDesk Mini - Debug Console</h1>
+    
+    <div class="test-section">
+        <h3>1. Server Health Check</h3>
+        <button onclick="testHealth()">Test Health Endpoint</button>
+        <div id="healthResult"></div>
+    </div>
+    
+    <div class="test-section">
+        <h3>2. API Documentation</h3>
+        <button onclick="testAPI()">Test API Endpoint</button>
+        <div id="apiResult"></div>
+    </div>
+    
+    <div class="test-section">
+        <h3>3. Login Test</h3>
+        <button onclick="testLogin()">Test Login</button>
+        <div id="loginResult"></div>
+    </div>
+    
+    <div class="test-section">
+        <h3>4. Ticket Creation Test</h3>
+        <button onclick="testCreateTicket()">Test Create Ticket</button>
+        <div id="ticketResult"></div>
+    </div>
+    
+    <div class="test-section">
+        <h3>5. Get Tickets Test</h3>
+        <button onclick="testGetTickets()">Test Get Tickets</button>
+        <div id="getTicketsResult"></div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:3000/api';
+        let authToken = null;
+
+        async function testHealth() {
+            try {
+                const response = await fetch('http://localhost:3000/health');
+                const data = await response.json();
+                document.getElementById('healthResult').innerHTML = 
+                    `<div class="success">✅ Health check passed</div><pre>${JSON.stringify(data, null, 2)}</pre>`;
+            } catch (error) {
+                document.getElementById('healthResult').innerHTML = 
+                    `<div class="error">❌ Health check failed: ${error.message}</div>`;
+            }
+        }
+
+        async function testAPI() {
+            try {
+                const response = await fetch('http://localhost:3000/api');
+                const data = await response.json();
+                document.getElementById('apiResult').innerHTML = 
+                    `<div class="success">✅ API documentation loaded</div><pre>${JSON.stringify(data, null, 2)}</pre>`;
+            } catch (error) {
+                document.getElementById('apiResult').innerHTML = 
+                    `<div class="error">❌ API test failed: ${error.message}</div>`;
+            }
+        }
+
+        async function testLogin() {
+            try {
+                const response = await fetch(`${API_BASE}/auth/login`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        email: 'admin@helpdesk.com',
+                        password: 'Admin123!'
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    authToken = data.token;
+                    document.getElementById('loginResult').innerHTML = 
+                        `<div class="success">✅ Login successful</div><pre>Token: ${authToken.substring(0, 50)}...</pre>`;
+                } else {
+                    document.getElementById('loginResult').innerHTML = 
+                        `<div class="error">❌ Login failed: ${data.message}</div>`;
+                }
+            } catch (error) {
+                document.getElementById('loginResult').innerHTML = 
+                    `<div class="error">❌ Login error: ${error.message}</div>`;
+            }
+        }
+
+        async function testCreateTicket() {
+            if (!authToken) {
+                document.getElementById('ticketResult').innerHTML = 
+                    `<div class="error">❌ Please login first</div>`;
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/tickets`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`,
+                        'Idempotency-Key': `debug-${Date.now()}`
+                    },
+                    body: JSON.stringify({
+                        title: 'Debug Test Ticket',
+                        description: 'This is a test ticket created from the debug page',
+                        priority: 'medium'
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    document.getElementById('ticketResult').innerHTML = 
+                        `<div class="success">✅ Ticket created successfully</div><pre>${JSON.stringify(data, null, 2)}</pre>`;
+                } else {
+                    document.getElementById('ticketResult').innerHTML = 
+                        `<div class="error">❌ Ticket creation failed: ${data.message}</div>`;
+                }
+            } catch (error) {
+                document.getElementById('ticketResult').innerHTML = 
+                    `<div class="error">❌ Ticket creation error: ${error.message}</div>`;
+            }
+        }
+
+        async function testGetTickets() {
+            if (!authToken) {
+                document.getElementById('getTicketsResult').innerHTML = 
+                    `<div class="error">❌ Please login first</div>`;
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/tickets`, {
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    document.getElementById('getTicketsResult').innerHTML = 
+                        `<div class="success">✅ Tickets retrieved successfully (${data.tickets.length} tickets)</div><pre>${JSON.stringify(data, null, 2)}</pre>`;
+                } else {
+                    document.getElementById('getTicketsResult').innerHTML = 
+                        `<div class="error">❌ Get tickets failed: ${data.message}</div>`;
+                }
+            } catch (error) {
+                document.getElementById('getTicketsResult').innerHTML = 
+                    `<div class="error">❌ Get tickets error: ${error.message}</div>`;
+            }
+        }
+
+        // Auto-run health check on page load
+        window.onload = function() {
+            testHealth();
+        };
+    </script>
+</body>
+</html>
+
